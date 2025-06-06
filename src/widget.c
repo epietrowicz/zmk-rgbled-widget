@@ -91,6 +91,7 @@ struct blink_item {
 
 // flag to indicate whether the initial boot up sequence is complete
 static bool initialized = false;
+static atomic_t is_idle = false;
 
 // track current color for persistent indicators (layer color)
 uint8_t led_current_color = 0;
@@ -274,12 +275,15 @@ static int led_layer_color_listener_cb(const zmk_event_t *eh) {
         case ZMK_ACTIVITY_SLEEP:
         case ZMK_ACTIVITY_IDLE:
             LOG_INF("Detected idle or sleep activity state, turn off LED");
+            atomic_set(&is_idle, true);
             // Queue a "turn off" message instead of calling directly
             struct blink_item off_blink = {.color = 0, .duration_ms = 0};
+            k_msgq_purge(&led_msgq);
             k_msgq_put(&led_msgq, &off_blink, K_NO_WAIT);
             break;
         case ZMK_ACTIVITY_ACTIVE:
             LOG_INF("Detected active activity state, updating layer color");
+            atomic_set(&is_idle, false);
             // if we are active, update the layer color
             if (initialized) {
                 update_layer_color();
@@ -373,7 +377,12 @@ extern void led_process_thread(void *d0, void *d1, void *d2) {
 
         } else {
             LOG_DBG("Got a layer color item from msgq, color %d", blink.color);
-            set_rgb_leds(blink.color, 0);
+            if(atomic_get(&is_idle)) {
+                set_rgb_leds(0, 0);
+            } else {
+                LOG_DBG("LED is idle, not turning off");
+                set_rgb_leds(blink.color, 0);
+            }
         }
     }
 }
