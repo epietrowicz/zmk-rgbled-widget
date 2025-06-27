@@ -440,8 +440,8 @@ extern void led_process_thread(void *d0, void *d1, void *d2)
                 set_rgb_leds(0, CONFIG_RGBLED_WIDGET_INTERVAL_MS);
             }
             // wait interval before processing another blink
-            LOG_DBG("Waiting for %d ms before processing next blink", blink.sleep_ms);
             set_rgb_leds(0, 0);
+            // LOG_DBG("Waiting for %d ms before processing next blink", blink.sleep_ms);
             // set_rgb_leds(led_layer_color,
             //              blink.sleep_ms > 0 ? blink.sleep_ms : CONFIG_RGBLED_WIDGET_INTERVAL_MS);
         }
